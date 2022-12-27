@@ -9,8 +9,7 @@ type Wish interface {
 	Create(text string, userId int) error
 	GetAll(userId int) ([]models.Wishes, error)
 	GetAllRecep(userId int) ([]models.Wishes, error)
-	//Delete(userId, itemId int) error
-	//Update(userId, wishId int, newText string) error
+	Delete(userId int, itemId string) error
 }
 
 type User interface {
@@ -20,6 +19,7 @@ type User interface {
 
 type Santa interface {
 	Create(santaId, userId int) error
+	ClearAll() error
 }
 
 type Repository struct {

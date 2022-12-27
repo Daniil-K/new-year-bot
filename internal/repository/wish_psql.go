@@ -57,12 +57,8 @@ func (r *WishPostgres) GetAllRecep(userId int) ([]models.Wishes, error) {
 	return wishes, nil
 }
 
-/*
-func (r *WishItemPostgres) Delete(userId, itemId int) error {
-	query := fmt.Sprintf(`DELETE FROM %s ti USING %s li, %s ul
-									WHERE ti.id = li.item_id AND li.list_id = ul.list_id AND ul.user_id = $1 AND ti.id = $2`,
-		todoItemsTable, listsItemsTable, usersListsTable)
-	_, err := r.db.Exec(query, userId, itemId)
+func (r *WishPostgres) Delete(userId int, text string) error {
+	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = $1 AND text = $2`, wishesTable)
+	_, err := r.db.Exec(query, userId, text)
 	return err
 }
-*/

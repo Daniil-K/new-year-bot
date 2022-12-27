@@ -25,6 +25,7 @@ type Responses struct {
 	StartGifts  string `mapstructure:"start_gifts"`
 	AddWish     string `mapstructure:"add_wish"`
 	EmptyWishes string `mapstructure:"empty_wishes"`
+	ClearSanta  string `mapstructure:"clear_santa"`
 }
 
 type Errors struct {

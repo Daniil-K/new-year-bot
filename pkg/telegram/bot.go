@@ -45,18 +45,6 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 			continue
 		}
 
-		if update.CallbackQuery != nil {
-			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
-			if _, err := b.bot.Request(callback); err != nil {
-				log.Println(err)
-			}
-
-			msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Data)
-			if _, err := b.bot.Send(msg); err != nil {
-				log.Println(err)
-			}
-		}
-
 		err := b.handleMessage(update.Message)
 		if err != nil {
 			log.Println(err)

@@ -25,3 +25,12 @@ func (r *SantaPostgres) Create(santaId, userId int) error {
 
 	return tx.Commit()
 }
+
+func (r *SantaPostgres) ClearAll() error {
+	query := fmt.Sprintf(`DELETE FROM %s`, santaTable)
+	if _, err := r.db.Exec(query); err != nil {
+		return err
+	}
+
+	return nil
+}

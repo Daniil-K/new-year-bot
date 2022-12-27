@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	commandStart = "start"
-	commandGifts = "start_gifts"
-	commandSanta = "start_santa"
+	commandStart      = "start"
+	commandGifts      = "start_gifts"
+	commandSanta      = "start_santa"
+	commandClearSanta = "clear_santa"
 
 	myWishes    = "Мои пожелания"
 	recepWishes = "Пожелания получателя"
@@ -33,12 +34,6 @@ var resumeKeyboard = tgbotapi.NewReplyKeyboard(
 	),
 )
 
-var wishesKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-	tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("Удалить", "delete"),
-	),
-)
-
 func (b *Bot) handleCommand(message *tgbotapi.Message) error {
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Я не знаю такой команды ")
 
@@ -50,6 +45,13 @@ func (b *Bot) handleCommand(message *tgbotapi.Message) error {
 	case commandSanta:
 		if message.From.ID == adminId {
 			err := b.startSanta()
+			return err
+		}
+		return nil
+
+	case commandClearSanta:
+		if message.From.ID == adminId {
+			err := b.clearSanta(message)
 			return err
 		}
 		return nil
@@ -94,19 +96,12 @@ func (b *Bot) handleMessage(message *tgbotapi.Message) error {
 	}
 
 	if message.Text != myWishes && message.Text != resume && message.Text != recepWishes {
-		err = b.addWishesSection(message)
+		err = b.addWishes(message)
 		if err != nil {
 			return err
 		}
 	}
 
-	return err
-}
-
-func (b *Bot) handleCallback(callback *tgbotapi.CallbackQuery) error {
-	msg := tgbotapi.NewMessage(callback.Message.Chat.ID, callback.Data)
-
-	_, err := b.bot.Send(msg)
 	return err
 }
 
@@ -170,7 +165,7 @@ func (b *Bot) startSanta() error {
 		msg := tgbotapi.NewMessage(int64(user.ChatId), "")
 
 		msg.Text = fmt.Sprintf(
-			"Твой получатель: %s!\nСсылка на его профиль: %s \nНе забудь про подарок!",
+			"Тебе выпадает: %s!\nСсылка на профиль: %s \nНе забудь про подарок!",
 			users[random].Name,
 			users[random].Url,
 		)
@@ -178,15 +173,19 @@ func (b *Bot) startSanta() error {
 		_, err = b.bot.Send(msg)
 
 	}
-	/*
-		msg := tgbotapi.NewMessage(message.Chat.ID, "")
-		userName := fmt.Sprintf("%s %s", message.From.FirstName, message.From.LastName)
 
-		msg.Text = fmt.Sprintf("Твой получатель: %s!\nСсылка на его профиль: %s \nНе забудь про подарок!", userName, userName)
+	return err
+}
 
-		_, err = b.bot.Send(msg)
+func (b *Bot) clearSanta(message *tgbotapi.Message) error {
+	err := b.repos.Santa.ClearAll()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 
-	*/
+	msg := tgbotapi.NewMessage(message.Chat.ID, b.messages.ClearSanta)
+	_, err = b.bot.Send(msg)
 	return err
 }
 
@@ -235,7 +234,6 @@ func (b *Bot) myWishesSection(message *tgbotapi.Message) error {
 
 	for _, wish := range wishes {
 		msg = tgbotapi.NewMessage(message.Chat.ID, wish.Text)
-		msg.ReplyMarkup = wishesKeyboard
 		_, err = b.bot.Send(msg)
 		if err != nil {
 			log.Println(err)
@@ -248,17 +246,33 @@ func (b *Bot) myWishesSection(message *tgbotapi.Message) error {
 func (b *Bot) recepWishesSection(message *tgbotapi.Message) error {
 	msg := tgbotapi.NewMessage(message.Chat.ID, " Пожелания твоего получателя")
 	msg.ReplyMarkup = resumeKeyboard
+	_, err := b.bot.Send(msg)
 
-	_, err := b.repos.Wish.GetAllRecep(int(message.From.ID))
+	wishes, err := b.repos.Wish.GetAllRecep(int(message.From.ID))
 	if err != nil {
 		log.Println(err)
 	}
 
-	_, err = b.bot.Send(msg)
+	if len(wishes) == 0 {
+		msg = tgbotapi.NewMessage(message.Chat.ID, b.messages.EmptyWishes)
+		_, err = b.bot.Send(msg)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
+	for _, wish := range wishes {
+		msg = tgbotapi.NewMessage(message.Chat.ID, wish.Text)
+		_, err = b.bot.Send(msg)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
 	return err
 }
 
-func (b *Bot) addWishesSection(message *tgbotapi.Message) error {
+func (b *Bot) addWishes(message *tgbotapi.Message) error {
 	msg := tgbotapi.NewMessage(message.Chat.ID, b.messages.AddWish)
 
 	err := b.repos.Wish.Create(message.Text, int(message.From.ID))
