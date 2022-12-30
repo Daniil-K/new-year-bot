@@ -14,7 +14,7 @@ func NewUserPostgres(db *sqlx.DB) *UserPostgres {
 	return &UserPostgres{db: db}
 }
 
-func (r *UserPostgres) Create(name, url string, userId, chatId int) error {
+func (r *UserPostgres) Create(name, url, userId, chatId string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err

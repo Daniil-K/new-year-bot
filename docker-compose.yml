@@ -4,8 +4,6 @@ services:
   secret-santa:
     build: ./
     command: ./wait-for-postgres.sh db ./secret-santa
-    ports:
-      - 8000:8000
     depends_on:
       - db
     environment:

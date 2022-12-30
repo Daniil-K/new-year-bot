@@ -22,18 +22,34 @@ func NewBot(bot *tgbotapi.BotAPI, messages config.Messages, repos *repository.Re
 func (b *Bot) Start() error {
 	log.Printf("Authorized on account %s", b.bot.Self.UserName)
 
-	updates, err := b.initUpdatesChannel()
-	if err != nil {
-		return err
-	}
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
 
+	updates := b.bot.GetUpdatesChan(u)
+	/*
+		updates, err := b.initUpdatesChannel()
+		if err != nil {
+			return err
+		}
+	*/
 	b.handleUpdates(updates)
 	return nil
 }
 
 func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 	for update := range updates {
-		if update.Message == nil { // If we got a message
+		if update.Message != nil {
+			err := b.handleMessage(update.Message)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+
+		if update.CallbackQuery != nil {
+			err := b.handleCallback(update.CallbackQuery)
+			if err != nil {
+				log.Println(err)
+			}
 			continue
 		}
 
@@ -43,11 +59,6 @@ func (b *Bot) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				log.Println(err)
 			}
 			continue
-		}
-
-		err := b.handleMessage(update.Message)
-		if err != nil {
-			log.Println(err)
 		}
 	}
 }

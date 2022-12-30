@@ -14,7 +14,7 @@ func NewWishPostgres(db *sqlx.DB) *WishPostgres {
 	return &WishPostgres{db: db}
 }
 
-func (r *WishPostgres) Create(text string, userId int) error {
+func (r *WishPostgres) Create(text, userId string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -27,7 +27,7 @@ func (r *WishPostgres) Create(text string, userId int) error {
 	return tx.Commit()
 }
 
-func (r *WishPostgres) GetAll(userId int) ([]models.Wishes, error) {
+func (r *WishPostgres) GetAll(userId string) ([]models.Wishes, error) {
 	var wishes []models.Wishes
 	query := fmt.Sprintf(
 		`SELECT * FROM %s WHERE user_id = $1`,
@@ -40,7 +40,7 @@ func (r *WishPostgres) GetAll(userId int) ([]models.Wishes, error) {
 	return wishes, nil
 }
 
-func (r *WishPostgres) GetAllRecep(userId int) ([]models.Wishes, error) {
+func (r *WishPostgres) GetAllRecep(userId string) ([]models.Wishes, error) {
 	var wishes []models.Wishes
 	query := fmt.Sprintf(
 		`SELECT w.text FROM %s w INNER JOIN %s u ON w.user_id = u.user_id
@@ -57,7 +57,7 @@ func (r *WishPostgres) GetAllRecep(userId int) ([]models.Wishes, error) {
 	return wishes, nil
 }
 
-func (r *WishPostgres) Delete(userId int, text string) error {
+func (r *WishPostgres) Delete(userId, text string) error {
 	query := fmt.Sprintf(`DELETE FROM %s WHERE user_id = $1 AND text = $2`, wishesTable)
 	_, err := r.db.Exec(query, userId, text)
 	return err

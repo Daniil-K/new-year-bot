@@ -13,7 +13,7 @@ func NewSantaPostgres(db *sqlx.DB) *SantaPostgres {
 	return &SantaPostgres{db: db}
 }
 
-func (r *SantaPostgres) Create(santaId, userId int) error {
+func (r *SantaPostgres) Create(santaId, userId string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err

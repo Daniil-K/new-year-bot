@@ -6,19 +6,19 @@ import (
 )
 
 type Wish interface {
-	Create(text string, userId int) error
-	GetAll(userId int) ([]models.Wishes, error)
-	GetAllRecep(userId int) ([]models.Wishes, error)
-	Delete(userId int, itemId string) error
+	Create(text, userId string) error
+	GetAll(userId string) ([]models.Wishes, error)
+	GetAllRecep(userId string) ([]models.Wishes, error)
+	Delete(userId, itemId string) error
 }
 
 type User interface {
-	Create(name, url string, userId, chatId int) error
+	Create(name, url, userId, chatId string) error
 	GetAll() ([]models.Users, error)
 }
 
 type Santa interface {
-	Create(santaId, userId int) error
+	Create(santaId, userId string) error
 	ClearAll() error
 }
 

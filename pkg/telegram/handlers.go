@@ -5,6 +5,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -16,21 +17,20 @@ const (
 
 	myWishes    = "Мои пожелания"
 	recepWishes = "Пожелания получателя"
-	resume      = "Назад"
 
 	adminId = 398382229
 )
 
 var startKeyboard = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
-		tgbotapi.NewKeyboardButton("Мои пожелания"),
-		tgbotapi.NewKeyboardButton("Пожелания получателя"),
+		tgbotapi.NewKeyboardButton(myWishes),
+		tgbotapi.NewKeyboardButton(recepWishes),
 	),
 )
 
-var resumeKeyboard = tgbotapi.NewReplyKeyboard(
-	tgbotapi.NewKeyboardButtonRow(
-		tgbotapi.NewKeyboardButton("Назад"),
+var wishKeyboard = tgbotapi.NewInlineKeyboardMarkup(
+	tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("Удалить", "delete"),
 	),
 )
 
@@ -69,6 +69,29 @@ func (b *Bot) handleCommand(message *tgbotapi.Message) error {
 	}
 }
 
+func (b *Bot) handleCallback(callback *tgbotapi.CallbackQuery) error {
+	err := b.repos.Wish.Delete(strconv.FormatInt(callback.Message.Chat.ID, 10), callback.Message.Text)
+	if err != nil {
+		log.Println(err)
+		msg := tgbotapi.NewMessage(callback.Message.Chat.ID, b.messages.UnableToDelete)
+		_, err := b.bot.Send(msg)
+		log.Println(err)
+		return err
+	}
+
+	msg := tgbotapi.NewMessage(callback.Message.Chat.ID, b.messages.SuccessDelete)
+	_, err = b.bot.Send(msg)
+
+	msgDelete := tgbotapi.NewDeleteMessage(callback.Message.Chat.ID, callback.Message.MessageID)
+	_, err = b.bot.Send(msgDelete)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return err
+}
+
 func (b *Bot) handleMessage(message *tgbotapi.Message) error {
 	log.Printf("[%s] %s", message.From.UserName, message.Text)
 	log.Printf("Id chat: [%d]", message.Chat.ID)
@@ -88,14 +111,9 @@ func (b *Bot) handleMessage(message *tgbotapi.Message) error {
 			return err
 		}
 
-	case resume:
-		err = b.mainMenu(message)
-		if err != nil {
-			return err
-		}
 	}
 
-	if message.Text != myWishes && message.Text != resume && message.Text != recepWishes {
+	if message.Text != myWishes && message.Text != recepWishes {
 		err = b.addWishes(message)
 		if err != nil {
 			return err
@@ -116,7 +134,7 @@ func (b *Bot) startMessage(message *tgbotapi.Message) error {
 	msg.ReplyMarkup = startKeyboard
 	_, _ = b.bot.Send(msg)
 
-	err := b.repos.User.Create(userName, userUrl, int(userId), int(chatId))
+	err := b.repos.User.Create(userName, userUrl, strconv.FormatInt(userId, 10), strconv.FormatInt(chatId, 10))
 	if err != nil {
 		log.Println(err)
 	}
@@ -152,7 +170,7 @@ func (b *Bot) startSanta() error {
 			random = notUserUsersId[n]
 		}
 
-		err = b.repos.Santa.Create(user.Id, users[random].Id)
+		err = b.repos.Santa.Create(string(rune(user.Id)), string(rune(users[random].Id)))
 		if err != nil {
 			log.Println(err)
 			return err
@@ -204,22 +222,11 @@ func (b *Bot) startGifts() error {
 	return err
 }
 
-func (b *Bot) mainMenu(message *tgbotapi.Message) error {
-	msg := tgbotapi.NewMessage(message.Chat.ID, "")
-
-	msg.Text = fmt.Sprintf("Ты находишься в главном меню!")
-	msg.ReplyMarkup = startKeyboard
-
-	_, err := b.bot.Send(msg)
-	return err
-}
-
 func (b *Bot) myWishesSection(message *tgbotapi.Message) error {
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Мои пожелания")
-	msg.ReplyMarkup = resumeKeyboard
 	_, err := b.bot.Send(msg)
 
-	wishes, err := b.repos.Wish.GetAll(int(message.From.ID))
+	wishes, err := b.repos.Wish.GetAll(strconv.FormatInt(message.From.ID, 10))
 	if err != nil {
 		log.Println(err)
 	}
@@ -234,6 +241,7 @@ func (b *Bot) myWishesSection(message *tgbotapi.Message) error {
 
 	for _, wish := range wishes {
 		msg = tgbotapi.NewMessage(message.Chat.ID, wish.Text)
+		msg.ReplyMarkup = wishKeyboard
 		_, err = b.bot.Send(msg)
 		if err != nil {
 			log.Println(err)
@@ -245,10 +253,9 @@ func (b *Bot) myWishesSection(message *tgbotapi.Message) error {
 
 func (b *Bot) recepWishesSection(message *tgbotapi.Message) error {
 	msg := tgbotapi.NewMessage(message.Chat.ID, " Пожелания твоего получателя")
-	msg.ReplyMarkup = resumeKeyboard
 	_, err := b.bot.Send(msg)
 
-	wishes, err := b.repos.Wish.GetAllRecep(int(message.From.ID))
+	wishes, err := b.repos.Wish.GetAllRecep(strconv.FormatInt(message.From.ID, 10))
 	if err != nil {
 		log.Println(err)
 	}
@@ -273,9 +280,13 @@ func (b *Bot) recepWishesSection(message *tgbotapi.Message) error {
 }
 
 func (b *Bot) addWishes(message *tgbotapi.Message) error {
+	if message.IsCommand() {
+		return nil
+	}
+
 	msg := tgbotapi.NewMessage(message.Chat.ID, b.messages.AddWish)
 
-	err := b.repos.Wish.Create(message.Text, int(message.From.ID))
+	err := b.repos.Wish.Create(message.Text, strconv.FormatInt(message.From.ID, 10))
 	if err != nil {
 		log.Println(err)
 		msg.Text = b.messages.UnableToSave

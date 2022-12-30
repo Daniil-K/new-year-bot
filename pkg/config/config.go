@@ -21,16 +21,18 @@ type Messages struct {
 }
 
 type Responses struct {
-	Start       string `mapstructure:"start"`
-	StartGifts  string `mapstructure:"start_gifts"`
-	AddWish     string `mapstructure:"add_wish"`
-	EmptyWishes string `mapstructure:"empty_wishes"`
-	ClearSanta  string `mapstructure:"clear_santa"`
+	Start         string `mapstructure:"start"`
+	StartGifts    string `mapstructure:"start_gifts"`
+	AddWish       string `mapstructure:"add_wish"`
+	EmptyWishes   string `mapstructure:"empty_wishes"`
+	ClearSanta    string `mapstructure:"clear_santa"`
+	SuccessDelete string `mapstructure:"success_delete"`
 }
 
 type Errors struct {
-	Default      string `mapstructure:"default"`
-	UnableToSave string `mapstructure:"unable_to_save"`
+	Default        string `mapstructure:"default"`
+	UnableToSave   string `mapstructure:"unable_to_save"`
+	UnableToDelete string `mapstructure:"unable_to_delete"`
 }
 
 func Init() (*Config, error) {
